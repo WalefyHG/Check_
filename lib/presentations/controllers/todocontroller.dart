@@ -33,5 +33,6 @@ class TodoController {
         return todo;
       }
     }).toList();
+    print(todos.value);
   }
 }
