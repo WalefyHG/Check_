@@ -4,29 +4,31 @@ class TodoModel{
   final String id;
   final String title;
   final String? description;
-  final String? date;
-  final bool isDone;
+  final DateTime? date;
+  late bool hasAlarm;
+  late bool isDone;
 
-  TodoModel(this.title, {String? descriptionC, String? dateC , String? idC, bool? isDoneC}):
+  TodoModel(this.title, {String? descriptionC, DateTime? dateC , String? idC, bool? isDoneC}):
     id = idC ?? const Uuid().v4(),
     isDone = isDoneC ?? false,
     description = descriptionC,
+    hasAlarm = false,
     date = dateC;
 
-  TodoModel copyWith({
-    String? id,
-    String? title,
-    String? description,
-    String? date,
-    bool? isDone,
+  TodoModel.fromJson(Map<String, dynamic> json):
+    id = json['id'],
+    title = json['title'],
+    description = json['description'],
+    date = json['date'] != null ? DateTime.parse(json['date'] as String) : null,
+    hasAlarm = json['hasAlarm'],
+    isDone = json['isDone'];
 
-}){
-    return TodoModel(
-      title ?? this.title,
-      descriptionC: description ?? this.description,
-      idC: id ?? this.id,
-      dateC: date ?? this.date,
-      isDoneC: isDone ?? this.isDone,
-    );
-  }
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'date': date?.toIso8601String(),
+    'hasAlarm': hasAlarm,
+    'isDone': isDone,
+  };
 }

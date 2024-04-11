@@ -1,12 +1,11 @@
-    import 'package:check/constants/colors.dart';
-import 'package:check/presentations/models/todolist.dart';
-import 'package:check/presentations/screens/home_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../presentations/controllers/todocontroller.dart';
+import '../constants/colors.dart';
+import '../presentations/models/todolist.dart';
 
-
-class AddTodoForm extends StatefulWidget{
+class AddTodoForm extends StatefulWidget {
   const AddTodoForm({super.key});
 
   @override
@@ -14,42 +13,44 @@ class AddTodoForm extends StatefulWidget{
 }
 
 class _AddTodoFormState extends State<AddTodoForm> {
-  final titleTEC = TextEditingController();
-  final descriptionTEC = TextEditingController();
-  final dateTEC = TextEditingController();
-  final formKey = GlobalKey<FormState>();
+  final TextEditingController titleTEC = TextEditingController();
+  final TextEditingController descriptionTEC = TextEditingController();
+  DateTime? selectedData;
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
-  void onAddTodo() {
+  @override
+  void dispose() {
+    titleTEC.dispose();
+    descriptionTEC.dispose();
+    super.dispose();
+  }
+
+  void onAddTodo(TodoController todoCtrl) {
     if (formKey.currentState!.validate()) {
-      if (!_isValidDate(dateTEC.text)) {
+      if (!_isValidDate(selectedData)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Data inválida. Por favor, insira uma data válida.'),
+            content: Text('Data inválida'),
+            backgroundColor: Colors.red,
           ),
         );
         return;
       }
-      final todoToAdd = TodoModel(
+      final TodoModel newTodo = TodoModel(
         titleTEC.text,
         descriptionC: descriptionTEC.text,
-        dateC: dateTEC.text,
+        dateC: selectedData,
       );
-      todoCtrl.addTodo(todoToAdd);
-
-      Navigator.pop(context);
+      todoCtrl.addTodo(newTodo);
+      print(newTodo);
     }
   }
 
-  bool _isValidDate(String date) {
-    try {
-      DateFormat('dd/MM/yyyy').parse(date);
-      return true;
-    } catch (e) {
-      return false;
-    }
+  bool _isValidDate(DateTime? date) {
+    return date != null;
   }
 
-void _selectDate(BuildContext context) async {
+  Future<void> _selectDate(BuildContext context) async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -58,127 +59,142 @@ void _selectDate(BuildContext context) async {
     );
     if (pickedDate != null) {
       setState(() {
-        dateTEC.text = DateFormat('dd/MM/yyyy').format(pickedDate);
+        selectedData = pickedDate;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-      },
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Card(
-              child: DecoratedBox(
-                decoration: const BoxDecoration(
-                  color: roxoBase,
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey,
-                      blurRadius: 10,
-                      offset: Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Adicionar nova atividade',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+    return Consumer<TodoController>(
+      builder: (context, todoCtrl, child) {
+        return GestureDetector(
+          onTap: () {
+            FocusScope.of(context).unfocus();
+          },
+          child: Center(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Card(
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        color: roxoBase,
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey,
+                            blurRadius: 10,
+                            offset: Offset(0, 5),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 20),
-                      Form(
-                        key: formKey,
+                      child: Padding(
+                        padding: const EdgeInsets.all(30),
                         child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            TextFormField(
-                              controller: titleTEC,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: const InputDecoration(
-                                labelText: 'Título',
-                                labelStyle: TextStyle(color: Colors.white),
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (String? value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Campo obrigatório';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 20),
-                            TextFormField(
-                              controller: descriptionTEC,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: const InputDecoration(
-                                labelText: 'Descrição',
-                                labelStyle: TextStyle(color: Colors.white),
-                                border: OutlineInputBorder(),
+                            const Text(
+                              'Adicionar nova atividade',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(height: 20),
-                            GestureDetector(
-                              onTap: () {
-                                _selectDate(context);
-                              },
-                              child: AbsorbPointer(
-                                child: TextFormField(
-                                  controller: dateTEC,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Data',
-                                    labelStyle: TextStyle(color: Colors.white),
-                                    border: OutlineInputBorder(),
+                            Form(
+                              key: formKey,
+                              child: Column(
+                                children: [
+                                  TextFormField(
+                                    controller: titleTEC,
+                                    style: const TextStyle(color: Colors.white),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Título',
+                                      labelStyle: TextStyle(color: Colors.white),
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    validator: (String? value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Campo obrigatório';
+                                      }
+                                      return null;
+                                    },
                                   ),
-                                ),
+                                  const SizedBox(height: 20),
+                                  TextFormField(
+                                    controller: descriptionTEC,
+                                    style: const TextStyle(color: Colors.white),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Descrição',
+                                      labelStyle: TextStyle(color: Colors.white),
+                                      border: OutlineInputBorder(),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  GestureDetector(
+                                    onTap: () {
+                                      _selectDate(context);
+                                    },
+                                    child: AbsorbPointer(
+                                      child: TextFormField(
+                                        controller: TextEditingController(text: selectedData != null ? DateFormat('dd/MM/yyyy').format(selectedData!): ''),
+                                        style: const TextStyle(color: Colors.white),
+                                        decoration: const InputDecoration(
+                                          labelText: 'Data',
+                                          labelStyle: TextStyle(color: Colors.white),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 30),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                        ),
+                                        child: const Text(
+                                          'Cancelar',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          onAddTodo(todoCtrl);
+                                          Navigator.pop(context);
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.green,
+                                        ),
+                                        child: const Text(
+                                          'Adicionar',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 20),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
-                                  ),
-                                  child: const Text('Cancelar', style: TextStyle(color: Colors.white),),
-                                ),
-                                ElevatedButton(
-                                  onPressed: onAddTodo,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                  ),
-                                  child: const Text('Adicionar', style: TextStyle(color: Colors.white),),
-                                ),
-                              ],
                             ),
                           ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              )
-            ),
-          ],
-        ),
-      ),
+                ],
+              ),
+            )
+          ),
+        );
+      },
     );
   }
 }
