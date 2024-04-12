@@ -62,9 +62,9 @@ class TodoController extends ChangeNotifier{
     notifyListeners();
   }
 
-  void saveListToLocalStorage() async{
+  Future<void> saveListToLocalStorage() async{
     final String todoListJson = jsonEncode(todos);
-    _prefs.setString(_key, todoListJson);
+    await _prefs.setString(_key, todoListJson);
   }
 
   void loadListFromLocalStorage() async{
@@ -87,14 +87,18 @@ class TodoController extends ChangeNotifier{
       selectedTime.minute,
     );
 
-    await AndroidAlarmManager.oneShotAt(
-      scheduleDateTime,
-      alarmId,
-      callback,
-      exact: true,
-      wakeup: true,
-      alarmClock: true,
-    );
+    try{
+      await AndroidAlarmManager.oneShotAt(
+        scheduleDateTime,
+        alarmId,
+        callback,
+        exact: true,
+        wakeup: true,
+      );
+      print('Foi alarmado para $scheduleDateTime');
+    }catch(e){
+      print('Erro no alarme shot: $e');
+    }
 
     todo.hasAlarm = true;
     saveListToLocalStorage();
@@ -109,18 +113,38 @@ class TodoController extends ChangeNotifier{
     saveListToLocalStorage();
     notifyListeners();
   }
-  
-  void callback(){
-    final todo = todos.firstWhere((element) => element.hasAlarm);
-    todo.hasAlarm = false;
-    if (kDebugMode) {
-      print('Alarm fired');
+
+
+  static void callback(int id) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final todos = TodoController(prefs).todos;
+
+    final todo = todos.firstWhere((element) => element.id.hashCode == id);
+
+    print('todo.hasAlarm: ${todo.hasAlarm}');
+
+    if(todo.hasAlarm) {
+      todo.hasAlarm = false;
+      await TodoController(prefs).saveListToLocalStorage();
+      await TodoController(prefs).notifyListeners();
+      print('Callback chamado para ${todo.title} e hasAlarm: ${todo.hasAlarm}');
+
+      try {
+        await NotificationHelper.scheduledNotification(
+          id,
+          todo.title,
+          todo.description ?? '',
+        );
+        print('Notificação enviada para ${todo.title}');
+      } catch (e) {
+        print('Erro no callback: $e');
+      }
     }
-    NotificationHelper.scheduledNotification(todo.title, todo.description ?? '');
-  }
+    }
+
 
   @override
-  void notifyListeners() {
+  Future<void> notifyListeners() async {
     super.notifyListeners();
   }
 }

@@ -1,4 +1,5 @@
 import 'package:check/presentations/screens/todoDetails.dart';
+import 'package:check/widgets/alarmIconWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -102,7 +103,7 @@ class Screen02 extends StatelessWidget {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (todo.hasAlarm) const Icon(Icons.alarm, color: Colors.white),
+                          AlarmIconWidget(hasAlarm: todo.hasAlarm),
                           PopupMenuButton<String>(
                             color: Colors.white,
                             iconColor: Colors.white,

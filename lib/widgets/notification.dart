@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -6,36 +8,50 @@ import 'package:timezone/timezone.dart' as tz;
 class NotificationHelper{
   static final _notification = FlutterLocalNotificationsPlugin();
 
-  static init(){
-    _notification.initialize(const InitializationSettings(
-      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-      iOS: DarwinInitializationSettings(),
-    ));
-    tz.initializeTimeZones();
+  static Future<void> init() async {
+    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
+    _notification.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) async {
+        print(response);
+      }
+    );
+
   }
 
-  static scheduledNotification(String title, String body) async{
+  static Future<void> requestNotificationPermission() async{
+    PermissionStatus status = await Permission.notification.status;
+
+    if(status.isDenied){
+      status = await Permission.notification.request();
+    }
+    if(status.isGranted){
+      await init();
+    }else{
+      await requestNotificationPermission();
+    }
+  }
+
+  static Future<void> scheduledNotification(int alarmId, String title, String body) async {
     var androidDetails = const AndroidNotificationDetails(
-      'channelName',
-      'channelDescription',
+      'Check',
+      'Checando as Informações',
       importance: Importance.max,
       priority: Priority.high,
+      enableVibration: true,
       playSound: true,
       sound: RawResourceAndroidNotificationSound('notification'),
     );
 
-    var iOSDetails = const DarwinNotificationDetails();
+    var notificationDetails = NotificationDetails(android: androidDetails);
 
-    var notificationDetails = NotificationDetails(android: androidDetails, iOS: iOSDetails);
-
-    await _notification.zonedSchedule(
-      0,
-      title,
-      body,
-      tz.TZDateTime.now(tz.local).add(const Duration(seconds: 10)),
-      notificationDetails,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    await _notification.show(
+        alarmId,
+        title,
+        body,
+        notificationDetails,
     );
   }
+
 }

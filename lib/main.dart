@@ -13,7 +13,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   await AndroidAlarmManager.initialize();
-  NotificationHelper.init();
+  await NotificationHelper.requestNotificationPermission();
   runApp(MyApp(prefs: prefs));
 }
 
