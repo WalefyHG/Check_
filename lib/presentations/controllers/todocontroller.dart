@@ -87,23 +87,25 @@ class TodoController extends ChangeNotifier{
       selectedTime.minute,
     );
 
-    try{
-      await AndroidAlarmManager.oneShotAt(
-        scheduleDateTime,
-        alarmId,
-        callback,
-        exact: true,
-        wakeup: true,
-      );
-      print('Foi alarmado para $scheduleDateTime');
-    }catch(e){
-      print('Erro no alarme shot: $e');
-    }
-
     todo.hasAlarm = true;
     saveListToLocalStorage();
     notifyListeners();
     print('alarme setado');
+
+    if(todo.hasAlarm){
+      try{
+        await AndroidAlarmManager.oneShotAt(
+          scheduleDateTime,
+          alarmId,
+          callback,
+          exact: true,
+          wakeup: true,
+        );
+        print('Foi alarmado para $scheduleDateTime');
+      }catch(e){
+        print('Erro no alarme shot: $e');
+      }
+    }
   }
 
   void cancelAlarm(TodoModel todo) async{
